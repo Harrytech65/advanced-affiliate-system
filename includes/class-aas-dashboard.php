@@ -1,0 +1,113 @@
+<?php
+// includes/class-aas-dashboard.php
+
+if (!defined('ABSPATH')) exit;
+
+class AAS_Dashboard {
+    
+    public function __construct() {
+        add_shortcode('aas_dashboard', array($this, 'render_dashboard'));
+        add_shortcode('aas_registration', array($this, 'render_registration'));
+        add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
+        add_action('wp_ajax_aas_register_affiliate', array($this, 'register_affiliate'));
+    }
+    
+    public function enqueue_scripts() {
+        if (is_page()) {
+            wp_enqueue_style('aas-frontend', AAS_PLUGIN_URL . 'assets/css/frontend.css', array(), AAS_VERSION);
+            wp_enqueue_script('aas-frontend', AAS_PLUGIN_URL . 'assets/js/frontend.js', array('jquery'), AAS_VERSION, true);
+            wp_localize_script('aas-frontend', 'aas_ajax', array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('aas_frontend_nonce')
+            ));
+        }
+    }
+    
+    public function render_dashboard($atts) {
+        if (!is_user_logged_in()) {
+            return '<p>' . __('Please log in to view your affiliate dashboard.', 'advanced-affiliate') . '</p>';
+        }
+        
+        $user_id = get_current_user_id();
+        $affiliate = AAS_Database::get_affiliate_by_user($user_id);
+        
+        if (!$affiliate) {
+            return '<p>' . __('You are not registered as an affiliate.', 'advanced-affiliate') . ' <a href="' . get_permalink(get_option('aas_affiliate_registration_page_id')) . '">' . __('Apply now', 'advanced-affiliate') . '</a></p>';
+        }
+        
+        if ($affiliate->status === 'pending') {
+            return '<div class="aas-notice aas-pending"><p>' . __('Your affiliate application is pending approval.', 'advanced-affiliate') . '</p></div>';
+        }
+        
+        if ($affiliate->status === 'rejected') {
+            return '<div class="aas-notice aas-error"><p>' . __('Your affiliate application was rejected.', 'advanced-affiliate') . '</p></div>';
+        }
+        
+        $stats = AAS_Database::get_affiliate_stats($affiliate->id);
+        $commissions = AAS_Database::get_commissions($affiliate->id);
+        
+        ob_start();
+        include AAS_PLUGIN_DIR . 'templates/dashboard.php';
+        return ob_get_clean();
+    }
+    
+    public function render_registration($atts) {
+        if (!is_user_logged_in()) {
+            return '<p>' . __('Please log in to apply as an affiliate.', 'advanced-affiliate') . ' <a href="' . wp_login_url(get_permalink()) . '">' . __('Log in', 'advanced-affiliate') . '</a></p>';
+        }
+        
+        $user_id = get_current_user_id();
+        $affiliate = AAS_Database::get_affiliate_by_user($user_id);
+        
+        if ($affiliate) {
+            return '<p>' . __('You are already registered as an affiliate.', 'advanced-affiliate') . ' <a href="' . get_permalink(get_option('aas_affiliate_dashboard_page_id')) . '">' . __('View Dashboard', 'advanced-affiliate') . '</a></p>';
+        }
+        
+        ob_start();
+        include AAS_PLUGIN_DIR . 'templates/registration.php';
+        return ob_get_clean();
+    }
+    
+    public function register_affiliate() {
+        check_ajax_referer('aas_frontend_nonce', 'nonce');
+        
+        if (!is_user_logged_in()) {
+            wp_send_json_error('You must be logged in');
+        }
+        
+        $user_id = get_current_user_id();
+        
+        // Check if already registered
+        $existing = AAS_Database::get_affiliate_by_user($user_id);
+        if ($existing) {
+            wp_send_json_error('You are already registered');
+        }
+        
+        $payment_email = sanitize_email($_POST['payment_email']);
+        $payment_method = sanitize_text_field($_POST['payment_method']);
+        
+        if (!is_email($payment_email)) {
+            wp_send_json_error('Invalid email address');
+        }
+        
+        $auto_approve = get_option('aas_auto_approve', 'no');
+        $status = $auto_approve === 'yes' ? 'active' : 'pending';
+        
+        $affiliate_id = AAS_Database::create_affiliate(array(
+            'user_id' => $user_id,
+            'payment_email' => $payment_email,
+            'payment_method' => $payment_method,
+            'status' => $status
+        ));
+        
+        if ($affiliate_id) {
+            do_action('aas_affiliate_registered', $affiliate_id, $user_id);
+            wp_send_json_success(array(
+                'message' => $status === 'active' ? 'Registration approved!' : 'Application submitted!',
+                'redirect' => get_permalink(get_option('aas_affiliate_dashboard_page_id'))
+            ));
+        } else {
+            wp_send_json_error('Registration failed');
+        }
+    }
+}

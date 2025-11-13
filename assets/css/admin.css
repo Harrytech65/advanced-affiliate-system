@@ -1,0 +1,308 @@
+/* Admin CSS for Advanced Affiliate System */
+
+/* Status Badges */
+.aas-status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.aas-status-active,
+.aas-status-approved {
+    background: #d4edda;
+    color: #155724;
+}
+
+.aas-status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.aas-status-rejected,
+.aas-status-cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.aas-status-inactive,
+.aas-status-suspended {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
+.aas-status-paid,
+.aas-status-completed {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+/* Admin Filters */
+.aas-admin-filters {
+    margin-bottom: 20px;
+}
+
+.aas-admin-filters .subsubsub {
+    margin-bottom: 10px;
+}
+
+/* Admin Stats Cards */
+.aas-admin-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.aas-stat-card {
+    background: #fff;
+    padding: 20px;
+    border-left: 4px solid #0073aa;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.aas-stat-card h3 {
+    margin: 0 0 10px;
+    font-size: 14px;
+    color: #666;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.aas-stat-card .stat-value {
+    font-size: 32px;
+    font-weight: bold;
+    color: #0073aa;
+}
+
+/* Quick Actions */
+.aas-quick-actions {
+    margin: 20px 0;
+}
+
+.aas-quick-actions .button {
+    margin-right: 10px;
+}
+
+/* Table Enhancements */
+.wp-list-table.aas-table tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+.wp-list-table.aas-table .column-actions {
+    white-space: nowrap;
+}
+
+.wp-list-table.aas-table .column-actions .button {
+    margin: 2px;
+}
+
+/* Form Styling */
+.aas-form-table {
+    width: 100%;
+    max-width: 800px;
+}
+
+.aas-form-table th {
+    width: 200px;
+    font-weight: 600;
+}
+
+.aas-form-table td input[type="text"],
+.aas-form-table td input[type="number"],
+.aas-form-table td input[type="email"],
+.aas-form-table td select,
+.aas-form-table td textarea {
+    width: 100%;
+    max-width: 400px;
+}
+
+.aas-form-table td .description {
+    font-style: italic;
+    color: #666;
+    font-size: 13px;
+}
+
+/* Modal Styles */
+.aas-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100000;
+}
+
+.aas-modal-overlay.active {
+    display: flex;
+}
+
+.aas-modal {
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.aas-modal-header {
+    margin-bottom: 20px;
+}
+
+.aas-modal-header h2 {
+    margin: 0;
+}
+
+.aas-modal-body {
+    margin-bottom: 20px;
+}
+
+.aas-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Loading Spinner */
+.aas-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #0073aa;
+    border-radius: 50%;
+    animation: aas-spin 1s linear infinite;
+}
+
+@keyframes aas-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Notice Boxes */
+.aas-notice {
+    padding: 12px 15px;
+    margin: 15px 0;
+    border-left: 4px solid #0073aa;
+    background: #f0f6fc;
+}
+
+.aas-notice.success {
+    border-left-color: #46b450;
+    background: #ecf7ed;
+}
+
+.aas-notice.error {
+    border-left-color: #dc3232;
+    background: #fbeaea;
+}
+
+.aas-notice.warning {
+    border-left-color: #ffb900;
+    background: #fff8e5;
+}
+
+/* Charts and Graphs */
+.aas-chart-container {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin: 20px 0;
+}
+
+/* Affiliate Link Preview */
+.aas-link-preview {
+    background: #f5f5f5;
+    padding: 15px;
+    border-radius: 4px;
+    margin: 15px 0;
+}
+
+.aas-link-preview code {
+    background: #fff;
+    padding: 8px 12px;
+    border-radius: 3px;
+    display: block;
+    font-size: 14px;
+    word-break: break-all;
+}
+
+/* Export Button */
+.aas-export-btn {
+    margin-left: 10px;
+}
+
+.aas-export-btn:before {
+    content: "\f316";
+    font-family: dashicons;
+    margin-right: 5px;
+}
+
+/* Commission Details */
+.aas-commission-details {
+    margin: 10px 0;
+}
+
+.aas-commission-details dt {
+    font-weight: 600;
+    display: inline-block;
+    width: 150px;
+}
+
+.aas-commission-details dd {
+    display: inline-block;
+    margin: 0 0 8px 10px;
+}
+
+/* Pagination */
+.aas-pagination {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.aas-pagination .button {
+    margin: 0 5px;
+}
+
+/* Dashboard Widgets */
+.aas-dashboard-widget {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.aas-dashboard-widget h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .aas-admin-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .aas-form-table th,
+    .aas-form-table td {
+        display: block;
+        width: 100%;
+    }
+    
+    .wp-list-table.aas-table .column-actions .button {
+        display: block;
+        margin: 5px 0;
+    }
+}
