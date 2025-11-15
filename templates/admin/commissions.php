@@ -5,7 +5,48 @@ if (!defined('ABSPATH')) exit;
 
 <div class="wrap">
     <h1><?php _e('Commissions', 'advanced-affiliate'); ?></h1>
+    
+    <!-- Bulk Actions -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <a href="?page=aas-commissions&action=bulk_approve" class="button button-primary">
+                <?php _e('Bulk Approve Pending', 'advanced-affiliate'); ?>
+            </a>
+            <a href="?page=aas-commissions&action=export" class="button">
+                <?php _e('Export CSV', 'advanced-affiliate'); ?>
+            </a>
+        </div>
+    </div>
 
+    <!-- Summary Stats -->
+    <?php
+    $total_commissions = $wpdb->get_var("SELECT COALESCE(SUM(amount), 0) FROM {$wpdb->prefix}aas_commissions");
+    $pending_total = $wpdb->get_var("SELECT COALESCE(SUM(amount), 0) FROM {$wpdb->prefix}aas_commissions WHERE status = 'pending'");
+    $approved_total = $wpdb->get_var("SELECT COALESCE(SUM(amount), 0) FROM {$wpdb->prefix}aas_commissions WHERE status = 'approved'");
+    $paid_total = $wpdb->get_var("SELECT COALESCE(SUM(amount), 0) FROM {$wpdb->prefix}aas_commissions WHERE status = 'paid'");
+    $currency = get_option('aas_currency', 'USD');
+    ?>
+
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0;">
+        <div class="aas-stat-card">
+            <h3><?php _e('Total Commissions', 'advanced-affiliate'); ?></h3>
+            <div class="stat-value"><?php echo $currency; ?> <?php echo number_format($total_commissions, 2); ?></div>
+        </div>
+        <div class="aas-stat-card" style="border-left-color: #ffb900;">
+            <h3><?php _e('Pending', 'advanced-affiliate'); ?></h3>
+            <div class="stat-value" style="color: #ffb900;"><?php echo $currency; ?> <?php echo number_format($pending_total, 2); ?></div>
+        </div>
+        <div class="aas-stat-card" style="border-left-color: #46b450;">
+            <h3><?php _e('Approved', 'advanced-affiliate'); ?></h3>
+            <div class="stat-value" style="color: #46b450;"><?php echo $currency; ?> <?php echo number_format($approved_total, 2); ?></div>
+        </div>
+        <div class="aas-stat-card" style="border-left-color: #0073aa;">
+            <h3><?php _e('Paid Out', 'advanced-affiliate'); ?></h3>
+            <div class="stat-value" style="color: #0073aa;"><?php echo $currency; ?> <?php echo number_format($paid_total, 2); ?></div>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
     <div class="aas-admin-filters">
         <ul class="subsubsub">
             <li><a href="?page=aas-commissions&status=all" <?php echo $status_filter === 'all' ? 'class="current"' : ''; ?>><?php _e('All', 'advanced-affiliate'); ?></a> |</li>
@@ -16,6 +57,7 @@ if (!defined('ABSPATH')) exit;
         </ul>
     </div>
 
+    <!-- Commissions Table -->
     <table class="wp-list-table widefat fixed striped">
         <thead>
             <tr>
@@ -54,6 +96,11 @@ if (!defined('ABSPATH')) exit;
                         <span class="aas-status-badge aas-status-<?php echo esc_attr($commission->status); ?>">
                             <?php echo ucfirst($commission->status); ?>
                         </span>
+                        <?php if (strpos($commission->description, 'REFUNDED') !== false): ?>
+                            <br><small style="color: #dc3232;">⚠ Refunded</small>
+                        <?php elseif (strpos($commission->description, 'REJECTED') !== false): ?>
+                            <br><small style="color: #dc3232;">⚠ Order Issue</small>
+                        <?php endif; ?>
                     </td>
                     <td>
                         <?php if ($commission->status === 'pending'): ?>
@@ -97,67 +144,44 @@ if (!defined('ABSPATH')) exit;
 
 <script>
 jQuery(document).ready(function($) {
-    // Approve Commission
     $('.aas-approve-commission').on('click', function() {
         var commissionId = $(this).data('id');
-        
         if (!confirm('<?php _e('Approve this commission?', 'advanced-affiliate'); ?>')) return;
-        
         $.post(ajaxurl, {
             action: 'aas_approve_commission',
             nonce: '<?php echo wp_create_nonce('aas_admin_nonce'); ?>',
             commission_id: commissionId
         }, function(response) {
-            if (response.success) {
-                location.reload();
-            } else {
-                alert(response.data);
-            }
+            if (response.success) { location.reload(); } else { alert(response.data); }
         });
     });
     
-    // Reject Commission
     $('.aas-reject-commission').on('click', function() {
         var commissionId = $(this).data('id');
-        
         if (!confirm('<?php _e('Reject this commission? This cannot be undone.', 'advanced-affiliate'); ?>')) return;
-        
         $.post(ajaxurl, {
             action: 'aas_reject_commission',
             nonce: '<?php echo wp_create_nonce('aas_admin_nonce'); ?>',
             commission_id: commissionId
         }, function(response) {
-            if (response.success) {
-                location.reload();
-            } else {
-                alert(response.data);
-            }
+            if (response.success) { location.reload(); } else { alert(response.data); }
         });
     });
     
-    // Mark as Paid
     $('.aas-mark-paid-commission').on('click', function() {
         var commissionId = $(this).data('id');
-        
         if (!confirm('<?php _e('Mark this commission as paid?', 'advanced-affiliate'); ?>')) return;
-        
         $.post(ajaxurl, {
             action: 'aas_mark_paid_commission',
             nonce: '<?php echo wp_create_nonce('aas_admin_nonce'); ?>',
             commission_id: commissionId
         }, function(response) {
-            if (response.success) {
-                location.reload();
-            } else {
-                alert(response.data);
-            }
+            if (response.success) { location.reload(); } else { alert(response.data); }
         });
     });
     
-    // View Details
     $('.aas-view-commission-details').on('click', function() {
         var commissionId = $(this).data('id');
-        
         $.post(ajaxurl, {
             action: 'aas_get_commission_details',
             nonce: '<?php echo wp_create_nonce('aas_admin_nonce'); ?>',

@@ -10,23 +10,32 @@ class AAS_Commission {
     }
     
     public function process_commission($order_id, $order_total) {
+        error_log('AAS Commission: Processing order #' . $order_id . ' Total: ' . $order_total);
+        
         // Get affiliate from cookie
         $tracking = new AAS_Tracking();
         $affiliate = $tracking->get_affiliate_from_cookie();
         
         if (!$affiliate || $affiliate->status !== 'active') {
+            error_log('AAS Commission: Invalid affiliate or not active');
             return false;
         }
         
+        error_log('AAS Commission: Affiliate OK - ID: ' . $affiliate->id);
+        
         // Check if commission already created for this order
         if ($this->commission_exists($order_id)) {
+            error_log('AAS Commission: Already exists for order #' . $order_id);
             return false;
         }
         
         // Calculate commission
         $commission_amount = $this->calculate_commission($order_total, $affiliate);
         
+        error_log('AAS Commission: Calculated amount: ' . $commission_amount);
+        
         if ($commission_amount <= 0) {
+            error_log('AAS Commission: Amount is zero or negative');
             return false;
         }
         
@@ -40,6 +49,8 @@ class AAS_Commission {
             'type' => 'sale',
             'description' => sprintf(__('Commission for Order #%d', 'advanced-affiliate'), $order_id)
         ));
+        
+        error_log('AAS Commission: Created! ID: ' . $commission_id);
         
         // Update affiliate total earnings
         $this->update_affiliate_earnings($affiliate->id, $commission_amount);

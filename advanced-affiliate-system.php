@@ -45,6 +45,7 @@ class Advanced_Affiliate_System {
         require_once AAS_PLUGIN_DIR . 'includes/class-aas-commission.php';
         require_once AAS_PLUGIN_DIR . 'includes/class-aas-payout.php';
         require_once AAS_PLUGIN_DIR . 'includes/class-aas-reports.php';
+        require_once AAS_PLUGIN_DIR . 'includes/class-aas-cron.php';
         require_once AAS_PLUGIN_DIR . 'includes/class-aas-admin.php';
         require_once AAS_PLUGIN_DIR . 'includes/class-aas-dashboard.php';
         require_once AAS_PLUGIN_DIR . 'includes/class-aas-woocommerce.php';
@@ -53,6 +54,7 @@ class Advanced_Affiliate_System {
     private function init_hooks() {
         register_activation_hook(AAS_PLUGIN_FILE, array('AAS_Install', 'activate'));
         register_deactivation_hook(AAS_PLUGIN_FILE, array('AAS_Install', 'deactivate'));
+        register_deactivation_hook(AAS_PLUGIN_FILE, array('AAS_Cron', 'clear_scheduled_events'));
         
         add_action('plugins_loaded', array($this, 'init'));
         add_action('init', array($this, 'register_post_types'));
@@ -63,6 +65,7 @@ class Advanced_Affiliate_System {
         
         new AAS_Tracking();
         new AAS_Commission();
+        new AAS_Cron();
         new AAS_Admin();
         new AAS_Dashboard();
         new AAS_WooCommerce();

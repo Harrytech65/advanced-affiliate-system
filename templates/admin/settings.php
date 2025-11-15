@@ -120,6 +120,45 @@ if (!defined('ABSPATH')) exit;
                     </p>
                 </td>
             </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="aas_refund_period"><?php _e('Refund Period (Days)', 'advanced-affiliate'); ?></label>
+                </th>
+                <td>
+                    <input type="number" name="aas_refund_period" id="aas_refund_period" 
+                           value="<?php echo esc_attr(get_option('aas_refund_period', 30)); ?>" 
+                           min="0" max="365" class="regular-text">
+                    <p class="description"><?php _e('Commission will be held for this many days before approval. Set 0 to disable.', 'advanced-affiliate'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row">
+                    <?php _e('Auto-Approve Commissions', 'advanced-affiliate'); ?>
+                </th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="aas_auto_approve_commissions" value="yes" 
+                               <?php checked(get_option('aas_auto_approve_commissions'), 'yes'); ?>>
+                        <?php _e('Automatically approve commissions after refund period', 'advanced-affiliate'); ?>
+                    </label>
+                    <p class="description"><?php _e('If enabled, commissions will auto-approve after refund period expires', 'advanced-affiliate'); ?></p>
+                </td>
+            </tr>
+            
+            <tr>
+                <th scope="row">
+                    <?php _e('Handle Refunds', 'advanced-affiliate'); ?>
+                </th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="aas_handle_refunds" value="yes" 
+                               <?php checked(get_option('aas_handle_refunds', 'yes'), 'yes'); ?>>
+                        <?php _e('Automatically deduct commission on order refund/cancellation', 'advanced-affiliate'); ?>
+                    </label>
+                </td>
+            </tr>
         </table>
 
         <?php submit_button(__('Save Settings', 'advanced-affiliate'), 'primary', 'aas_save_settings'); ?>

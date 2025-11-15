@@ -163,7 +163,11 @@ class AAS_Admin {
             'aas_payout_method',
             'aas_payout_threshold',
             'aas_auto_approve',
-            'aas_require_approval'
+            'aas_require_approval',
+            'aas_refund_period',
+            'aas_auto_approve_commissions',
+            'aas_handle_refunds',
+            'aas_currency'
         );
         
         foreach ($settings as $setting) {
@@ -172,6 +176,7 @@ class AAS_Admin {
             }
         }
     }
+
     
     public function approve_affiliate() {
         check_ajax_referer('aas_admin_nonce', 'nonce');
@@ -269,4 +274,83 @@ class AAS_Admin {
         
         wp_send_json_success('Commission approved');
     }
+    
+    public function reject_commission() {
+        check_ajax_referer('aas_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        $commission_id = intval($_POST['commission_id']);
+        
+        $commission_handler = new AAS_Commission();
+        $commission_handler->reject_commission($commission_id);
+        
+        wp_send_json_success('Commission rejected');
+    }
+    
+    public function mark_paid_commission() {
+        check_ajax_referer('aas_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        $commission_id = intval($_POST['commission_id']);
+        
+        $commission_handler = new AAS_Commission();
+        $commission_handler->mark_commission_paid($commission_id);
+        
+        wp_send_json_success('Commission marked as paid');
+    }
+    public function get_commission_details() {
+        check_ajax_referer('aas_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        $commission_id = intval($_POST['commission_id']);
+        
+        global $wpdb;
+        $commission = $wpdb->get_row($wpdb->prepare(
+            "SELECT c.*, a.affiliate_code, u.display_name, u.user_email
+            FROM {$wpdb->prefix}aas_commissions c
+            LEFT JOIN {$wpdb->prefix}aas_affiliates a ON c.affiliate_id = a.id
+            LEFT JOIN {$wpdb->users} u ON a.user_id = u.ID
+            WHERE c.id = %d",
+            $commission_id
+        ));
+        
+        if (!$commission) {
+            wp_send_json_error('Commission not found');
+        }
+        
+        $currency = get_option('aas_currency', 'USD');
+        
+        $html = '<table class="form-table">';
+        $html .= '<tr><th>ID:</th><td>' . esc_html($commission->id) . '</td></tr>';
+        $html .= '<tr><th>Affiliate:</th><td><strong>' . esc_html($commission->display_name) . '</strong> (' . esc_html($commission->affiliate_code) . ')</td></tr>';
+        $html .= '<tr><th>Amount:</th><td><strong>' . $currency . ' ' . number_format($commission->amount, 2) . '</strong></td></tr>';
+        $html .= '<tr><th>Commission Rate:</th><td>' . number_format($commission->commission_rate, 2) . '%</td></tr>';
+        $html .= '<tr><th>Type:</th><td>' . ucfirst($commission->type) . '</td></tr>';
+        $html .= '<tr><th>Status:</th><td><span class="aas-status-badge aas-status-' . esc_attr($commission->status) . '">' . ucfirst($commission->status) . '</span></td></tr>';
+        
+        if ($commission->order_id) {
+            $html .= '<tr><th>Order:</th><td><a href="' . admin_url('post.php?post=' . $commission->order_id . '&action=edit') . '" target="_blank">Order #' . $commission->order_id . '</a></td></tr>';
+        }
+        
+        $html .= '<tr><th>Description:</th><td>' . esc_html($commission->description) . '</td></tr>';
+        $html .= '<tr><th>Created:</th><td>' . date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($commission->created_at)) . '</td></tr>';
+        
+        if ($commission->paid_at) {
+            $html .= '<tr><th>Paid At:</th><td>' . date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($commission->paid_at)) . '</td></tr>';
+        }
+        
+        $html .= '</table>';
+        
+        wp_send_json_success(array('html' => $html));
+    }
+
 }
