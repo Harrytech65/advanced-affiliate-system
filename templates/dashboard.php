@@ -139,41 +139,78 @@ if (!defined('ABSPATH')) exit;
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 <script>
 jQuery(document).ready(function($) {
-    // Copy link functionality
+    // Debug check
+    console.log('AAS Ajax:', typeof aas_ajax !== 'undefined' ? aas_ajax : 'NOT LOADED');
+    
+    // Copy affiliate link
     $('.aas-copy-btn').on('click', function() {
         var link = $('#aas-affiliate-link').val();
-        navigator.clipboard.writeText(link).then(function() {
-            $('.aas-copy-btn').text('Copied!');
-            setTimeout(function() {
-                $('.aas-copy-btn').text('<?php _e('Copy', 'advanced-affiliate'); ?>');
-            }, 2000);
-        });
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(link).then(function() {
+                $('.aas-copy-btn').text('Copied!');
+                setTimeout(function() {
+                    $('.aas-copy-btn').text('<?php _e('Copy', 'advanced-affiliate'); ?>');
+                }, 2000);
+            });
+        }
     });
     
-    // Payout request
-    $('#aas-request-payout').on('click', function() {
-        if (!confirm('<?php _e('Request payout?', 'advanced-affiliate'); ?>')) return;
+    // Request Payout
+    $('#aas-request-payout').on('click', function(e) {
+        e.preventDefault();
         
-        $.post(aas_ajax.ajax_url, {
-            action: 'aas_request_payout',
-            nonce: aas_ajax.nonce
-        }, function(response) {
-            if (response.success) {
-                alert(response.data);
-                location.reload();
-            } else {
-                alert(response.data);
+        if (!confirm('<?php _e('Request payout? Your available balance will be processed for payment.', 'advanced-affiliate'); ?>')) {
+            return;
+        }
+        
+        var $btn = $(this);
+        var originalText = $btn.text();
+        $btn.prop('disabled', true).text('Processing...');
+        
+        // Check if aas_ajax is defined
+        if (typeof aas_ajax === 'undefined') {
+            alert('Error: Ajax configuration not loaded. Please refresh the page.');
+            $btn.prop('disabled', false).text(originalText);
+            return;
+        }
+        
+        $.ajax({
+            url: aas_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'aas_request_payout',
+                nonce: aas_ajax.nonce
+            },
+            success: function(response) {
+                console.log('Success:', response);
+                if (response.success) {
+                    alert(response.data);
+                    location.reload();
+                } else {
+                    alert('Error: ' + response.data);
+                    $btn.prop('disabled', false).text(originalText);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Ajax Error:', {
+                    status: xhr.status,
+                    statusText: xhr.statusText,
+                    responseText: xhr.responseText,
+                    error: error
+                });
+                alert('Request failed: ' + xhr.status + ' - Please check console for details');
+                $btn.prop('disabled', false).text(originalText);
             }
         });
     });
     
-    // Performance Chart
+    // Performance Chart (if exists)
     <?php 
-    $report = AAS_Reports::get_affiliate_report($affiliate->id, 30);
+    if (class_exists('AAS_Reports')) {
+        $report = AAS_Reports::get_affiliate_report($affiliate->id, 30);
     ?>
-    
     var ctx = document.getElementById('aas-performance-chart');
-    if (ctx) {
+    if (ctx && typeof Chart !== 'undefined') {
         new Chart(ctx.getContext('2d'), {
             type: 'line',
             data: {
@@ -213,5 +250,6 @@ jQuery(document).ready(function($) {
             }
         });
     }
+    <?php } ?>
 });
 </script>

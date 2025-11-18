@@ -7,7 +7,7 @@ class AAS_Admin {
     
     public function __construct() {
         add_action('admin_menu', array($this, 'add_menu_pages'));
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
         add_action('wp_ajax_aas_approve_affiliate', array($this, 'approve_affiliate'));
         add_action('wp_ajax_aas_reject_affiliate', array($this, 'reject_affiliate'));
         add_action('wp_ajax_aas_activate_affiliate', array($this, 'activate_affiliate'));
@@ -17,6 +17,7 @@ class AAS_Admin {
         add_action('wp_ajax_aas_reject_commission', array($this, 'reject_commission'));
         add_action('wp_ajax_aas_mark_paid_commission', array($this, 'mark_paid_commission'));
         add_action('wp_ajax_aas_get_commission_details', array($this, 'get_commission_details'));
+        add_action('wp_ajax_aas_process_payout', array($this, 'process_payout_ajax'));
     }
     
     public function add_menu_pages() {
@@ -76,7 +77,7 @@ class AAS_Admin {
         );
     }
     
-    public function enqueue_scripts($hook) {
+    public function enqueue_admin_scripts($hook) {
         if (strpos($hook, 'aas-') !== false) {
             wp_enqueue_style('aas-admin', AAS_PLUGIN_URL . 'assets/css/admin.css', array(), AAS_VERSION);
             wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js', array(), '3.9.1', true);
@@ -166,8 +167,7 @@ class AAS_Admin {
             'aas_require_approval',
             'aas_refund_period',
             'aas_auto_approve_commissions',
-            'aas_handle_refunds',
-            'aas_currency'
+            'aas_handle_refunds'
         );
         
         foreach ($settings as $setting) {
@@ -352,5 +352,23 @@ class AAS_Admin {
         
         wp_send_json_success(array('html' => $html));
     }
-
+    public function process_payout_ajax() {
+        check_ajax_referer('aas_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        $payout_id = intval($_POST['payout_id']);
+        $transaction_id = sanitize_text_field($_POST['transaction_id']);
+        
+        $payout_handler = new AAS_Payout();
+        $result = $payout_handler->process_payout_admin($payout_id, $transaction_id);
+        
+        if ($result) {
+            wp_send_json_success('Payout processed successfully');
+        } else {
+            wp_send_json_error('Failed to process payout');
+        }
+    }
 }

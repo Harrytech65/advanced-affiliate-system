@@ -156,10 +156,11 @@
          * Request Payout
          */
         requestPayout: function() {
-            $('#aas-request-payout').on('click', function(e) {
+            $(document).on('click', '#aas-request-payout', function(e) {
                 e.preventDefault();
                 
                 var $btn = $(this);
+                var originalText = $btn.text();
                 
                 if (!confirm('Request payout? Your available balance will be processed for payment.')) {
                     return;
@@ -175,19 +176,25 @@
                         nonce: aas_ajax.nonce
                     },
                     success: function(response) {
+                        console.log('Payout Response:', response);
                         if (response.success) {
-                            AAS_Frontend.showNotice('Payout requested successfully! We will process it soon.', 'success');
+                            alert(response.data);
                             setTimeout(function() {
                                 location.reload();
-                            }, 2000);
+                            }, 1000);
                         } else {
-                            alert(response.data);
-                            $btn.prop('disabled', false).text('Request Payout');
+                            alert('Error: ' + response.data);
+                            $btn.prop('disabled', false).text(originalText);
                         }
                     },
-                    error: function() {
-                        alert('An error occurred. Please try again.');
-                        $btn.prop('disabled', false).text('Request Payout');
+                    error: function(xhr, status, error) {
+                        console.error('Payout Error:', {
+                            status: xhr.status,
+                            statusText: xhr.statusText,
+                            responseText: xhr.responseText
+                        });
+                        alert('Request failed. Please try again.');
+                        $btn.prop('disabled', false).text(originalText);
                     }
                 });
             });
@@ -260,93 +267,6 @@
                     $(this).remove();
                 });
             }, 5000);
-        },
-
-        /**
-         * Format Currency
-         */
-        formatCurrency: function(amount, currency) {
-            currency = currency || 'USD';
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: currency
-            }).format(amount);
-        },
-
-        /**
-         * Load More
-         */
-        loadMore: function() {
-            var page = 1;
-            
-            $('.aas-load-more').on('click', function(e) {
-                e.preventDefault();
-                
-                var $btn = $(this);
-                var $container = $('.aas-commissions-list');
-                
-                page++;
-                $btn.prop('disabled', true).text('Loading...');
-                
-                $.ajax({
-                    url: aas_ajax.ajax_url,
-                    type: 'POST',
-                    data: {
-                        action: 'aas_load_more_commissions',
-                        nonce: aas_ajax.nonce,
-                        page: page
-                    },
-                    success: function(response) {
-                        if (response.success && response.data.html) {
-                            $container.append(response.data.html);
-                            
-                            if (!response.data.has_more) {
-                                $btn.hide();
-                            } else {
-                                $btn.prop('disabled', false).text('Load More');
-                            }
-                        } else {
-                            $btn.hide();
-                        }
-                    },
-                    error: function() {
-                        $btn.prop('disabled', false).text('Load More');
-                    }
-                });
-            });
-        },
-
-        /**
-         * Share Affiliate Link
-         */
-        shareLink: function() {
-            $('.aas-share-btn').on('click', function(e) {
-                e.preventDefault();
-                
-                var platform = $(this).data('platform');
-                var link = $('#aas-affiliate-link').val();
-                var text = 'Check this out!';
-                var url = '';
-                
-                switch(platform) {
-                    case 'facebook':
-                        url = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(link);
-                        break;
-                    case 'twitter':
-                        url = 'https://twitter.com/intent/tweet?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(text);
-                        break;
-                    case 'linkedin':
-                        url = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(link);
-                        break;
-                    case 'whatsapp':
-                        url = 'https://wa.me/?text=' + encodeURIComponent(text + ' ' + link);
-                        break;
-                }
-                
-                if (url) {
-                    window.open(url, '_blank', 'width=600,height=400');
-                }
-            });
         }
     };
 

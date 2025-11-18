@@ -10,6 +10,7 @@ class AAS_Dashboard {
         add_shortcode('aas_registration', array($this, 'render_registration'));
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
         add_action('wp_ajax_aas_register_affiliate', array($this, 'register_affiliate'));
+        add_action('wp_ajax_aas_request_payout', array($this, 'handle_payout_request'));
     }
     
     public function enqueue_scripts() {
@@ -109,5 +110,87 @@ class AAS_Dashboard {
         } else {
             wp_send_json_error('Registration failed');
         }
+    }
+
+    public function handle_payout_request() {
+        check_ajax_referer('aas_frontend_nonce', 'nonce');
+        
+        if (!is_user_logged_in()) {
+            wp_send_json_error('Please log in to request a payout');
+        }
+        
+        $user_id = get_current_user_id();
+        $affiliate = AAS_Database::get_affiliate_by_user($user_id);
+        
+        if (!$affiliate) {
+            wp_send_json_error('You are not registered as an affiliate');
+        }
+        
+        if ($affiliate->status !== 'active') {
+            wp_send_json_error('Your affiliate account is not active');
+        }
+        
+        global $wpdb;
+        
+        // Get approved commissions total
+        $total_approved = $wpdb->get_var($wpdb->prepare(
+            "SELECT COALESCE(SUM(amount), 0) FROM {$wpdb->prefix}aas_commissions 
+            WHERE affiliate_id = %d AND status = 'approved'",
+            $affiliate->id
+        ));
+        
+        // Get paid commissions total
+        $total_paid = $wpdb->get_var($wpdb->prepare(
+            "SELECT COALESCE(SUM(amount), 0) FROM {$wpdb->prefix}aas_commissions 
+            WHERE affiliate_id = %d AND status = 'paid'",
+            $affiliate->id
+        ));
+        
+        $available = $total_approved - $affiliate->total_paid;
+        
+        $threshold = get_option('aas_payout_threshold', 50);
+        
+        if ($available < $threshold) {
+            wp_send_json_error(sprintf(
+                'Minimum payout is %s %s. Your available balance is %s %s',
+                get_option('aas_currency', 'USD'),
+                number_format($threshold, 2),
+                get_option('aas_currency', 'USD'),
+                number_format($available, 2)
+            ));
+        }
+        
+        // Check for existing pending payout
+        $existing = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}aas_payouts 
+            WHERE affiliate_id = %d AND status = 'pending'",
+            $affiliate->id
+        ));
+        
+        if ($existing > 0) {
+            wp_send_json_error('You already have a pending payout request');
+        }
+        
+        // Create payout request
+        $result = $wpdb->insert(
+            $wpdb->prefix . 'aas_payouts',
+            array(
+                'affiliate_id' => $affiliate->id,
+                'amount' => $available,
+                'method' => $affiliate->payment_method,
+                'status' => 'pending',
+                'created_at' => current_time('mysql')
+            ),
+            array('%d', '%f', '%s', '%s', '%s')
+        );
+        
+        if (!$result) {
+            error_log('Payout Insert Error: ' . $wpdb->last_error);
+            wp_send_json_error('Failed to create payout request');
+        }
+        
+        do_action('aas_payout_requested', $wpdb->insert_id, $affiliate->id);
+        
+        wp_send_json_success('Payout request submitted successfully! Admin will process it soon.');
     }
 }

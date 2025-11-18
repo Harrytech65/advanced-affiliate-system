@@ -37,7 +37,7 @@
                 $btn.prop('disabled', true).text('Processing...');
                 
                 $.ajax({
-                    url: ajaxurl,
+                    url: aas_ajax.ajax_url,
                     type: 'POST',
                     data: {
                         action: 'aas_approve_affiliate',
@@ -83,7 +83,7 @@
                 $btn.prop('disabled', true).text('Processing...');
                 
                 $.ajax({
-                    url: ajaxurl,
+                    url: aas_ajax.ajax_url,
                     type: 'POST',
                     data: {
                         action: 'aas_reject_affiliate',
@@ -127,7 +127,7 @@
                 $btn.prop('disabled', true).text('Processing...');
                 
                 $.ajax({
-                    url: ajaxurl,
+                    url: aas_ajax.ajax_url,
                     type: 'POST',
                     data: {
                         action: 'aas_approve_commission',
@@ -172,7 +172,7 @@
                 $btn.prop('disabled', true).text('Processing...');
                 
                 $.ajax({
-                    url: ajaxurl,
+                    url: aas_ajax.ajax_url,
                     type: 'POST',
                     data: {
                         action: 'aas_reject_commission',
@@ -225,7 +225,7 @@
                 $btn.prop('disabled', true).text('Processing...');
                 
                 $.ajax({
-                    url: ajaxurl,
+                    url: aas_ajax.ajax_url,
                     type: 'POST',
                     data: {
                         action: 'aas_process_payout',
@@ -277,7 +277,7 @@
                 
                 // Process bulk action via AJAX
                 $.ajax({
-                    url: ajaxurl,
+                    url: aas_ajax.ajax_url,
                     type: 'POST',
                     data: {
                         action: 'aas_bulk_action',
