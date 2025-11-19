@@ -59,7 +59,12 @@ class AAS_Affiliate {
     }
     
     public function get_balance() {
-        return $this->get_total_earnings() - $this->get_total_paid();
+        global $wpdb;
+        $result = $wpdb->get_var($wpdb->prepare(
+            "SELECT (total_earnings - total_paid) FROM {$wpdb->prefix}aas_affiliates WHERE id = %d",
+            $this->affiliate_id
+        ));
+        return $result ? floatval($result) : 0;
     }
     
     public function get_stats() {

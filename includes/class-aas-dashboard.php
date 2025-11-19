@@ -132,22 +132,14 @@ class AAS_Dashboard {
         
         global $wpdb;
         
-        // Get approved commissions total
-        $total_approved = $wpdb->get_var($wpdb->prepare(
-            "SELECT COALESCE(SUM(amount), 0) FROM {$wpdb->prefix}aas_commissions 
-            WHERE affiliate_id = %d AND status = 'approved'",
+        // Get current balance from affiliates table
+        $balance_data = $wpdb->get_row($wpdb->prepare(
+            "SELECT total_earnings, total_paid, (total_earnings - total_paid) as available 
+            FROM {$wpdb->prefix}aas_affiliates WHERE id = %d",
             $affiliate->id
         ));
-        
-        // Get paid commissions total
-        $total_paid = $wpdb->get_var($wpdb->prepare(
-            "SELECT COALESCE(SUM(amount), 0) FROM {$wpdb->prefix}aas_commissions 
-            WHERE affiliate_id = %d AND status = 'paid'",
-            $affiliate->id
-        ));
-        
-        $available = $total_approved - $affiliate->total_paid;
-        
+
+        $available = $balance_data->available;
         $threshold = get_option('aas_payout_threshold', 50);
         
         if ($available < $threshold) {

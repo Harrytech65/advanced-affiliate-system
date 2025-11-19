@@ -52,8 +52,8 @@ class AAS_Commission {
         
         error_log('AAS Commission: Created! ID: ' . $commission_id);
         
-        // Update affiliate total earnings
-        $this->update_affiliate_earnings($affiliate->id, $commission_amount);
+        // ❌ REMOVED: Don't update earnings yet - only when approved!
+        // $this->update_affiliate_earnings($affiliate->id, $commission_amount);
         
         // Send notification
         do_action('aas_commission_created', $commission_id, $affiliate->id);
@@ -93,6 +93,24 @@ class AAS_Commission {
     public function approve_commission($commission_id) {
         global $wpdb;
         
+        // Get commission details first
+        $commission = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}aas_commissions WHERE id = %d",
+            $commission_id
+        ));
+        
+        if (!$commission) {
+            error_log('AAS: Commission #' . $commission_id . ' not found');
+            return false;
+        }
+        
+        // Check if already approved to prevent double-counting
+        if ($commission->status === 'approved') {
+            error_log('AAS: Commission #' . $commission_id . ' already approved');
+            return true;
+        }
+        
+        // Update commission status
         $result = $wpdb->update(
             $wpdb->prefix . 'aas_commissions',
             array('status' => 'approved'),
@@ -101,10 +119,24 @@ class AAS_Commission {
             array('%d')
         );
         
+        // ✅ FIXED: Only update earnings when approving pending commissions
+        if ($commission->status === 'pending') {
+            $wpdb->query($wpdb->prepare(
+                "UPDATE {$wpdb->prefix}aas_affiliates 
+                SET total_earnings = total_earnings + %f 
+                WHERE id = %d",
+                $commission->amount,
+                $commission->affiliate_id
+            ));
+            
+            error_log('AAS: ✅ Updated affiliate #' . $commission->affiliate_id . ' earnings +' . $commission->amount);
+        }
+        
         do_action('aas_commission_approved', $commission_id);
         
         return $result;
     }
+
     
     public function reject_commission($commission_id) {
         global $wpdb;
@@ -128,12 +160,15 @@ class AAS_Commission {
             array('%d')
         );
         
-        // Reduce affiliate earnings
-        $wpdb->query($wpdb->prepare(
-            "UPDATE {$wpdb->prefix}aas_affiliates SET total_earnings = total_earnings - %f WHERE id = %d",
-            $commission->amount,
-            $commission->affiliate_id
-        ));
+        // ✅ FIXED: Only reduce earnings if commission was approved
+        if ($commission->status === 'approved') {
+            $wpdb->query($wpdb->prepare(
+                "UPDATE {$wpdb->prefix}aas_affiliates SET total_earnings = total_earnings - %f WHERE id = %d",
+                $commission->amount,
+                $commission->affiliate_id
+            ));
+            error_log('AAS: Reduced affiliate #' . $commission->affiliate_id . ' earnings -' . $commission->amount);
+        }
         
         do_action('aas_commission_rejected', $commission_id);
         
@@ -143,6 +178,17 @@ class AAS_Commission {
     public function mark_commission_paid($commission_id) {
         global $wpdb;
         
+        // Get commission first
+        $commission = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}aas_commissions WHERE id = %d",
+            $commission_id
+        ));
+        
+        if (!$commission) {
+            return false;
+        }
+        
+        // Update commission status
         $result = $wpdb->update(
             $wpdb->prefix . 'aas_commissions',
             array(
@@ -153,6 +199,19 @@ class AAS_Commission {
             array('%s', '%s'),
             array('%d')
         );
+        
+        // ✅ Update total_paid in affiliates table
+        if ($result) {
+            $wpdb->query($wpdb->prepare(
+                "UPDATE {$wpdb->prefix}aas_affiliates 
+                SET total_paid = total_paid + %f 
+                WHERE id = %d",
+                $commission->amount,
+                $commission->affiliate_id
+            ));
+            
+            error_log('AAS: Updated affiliate #' . $commission->affiliate_id . ' total_paid +' . $commission->amount);
+        }
         
         do_action('aas_commission_paid', $commission_id);
         

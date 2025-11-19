@@ -81,7 +81,12 @@ if (!defined('ABSPATH')) exit;
     </div>
 
     <?php
-    $available_balance = $stats['paid_commissions'] - $affiliate->total_paid;
+    // Calculate available balance from database
+    global $wpdb;
+    $available_balance = $wpdb->get_var($wpdb->prepare(
+        "SELECT (total_earnings - total_paid) FROM {$wpdb->prefix}aas_affiliates WHERE id = %d",
+        $affiliate->id
+    ));
     $threshold = get_option('aas_payout_threshold', 50);
     ?>
     
