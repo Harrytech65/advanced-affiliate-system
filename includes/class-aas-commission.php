@@ -217,4 +217,52 @@ class AAS_Commission {
         
         return $result;
     }
+    public function refund_commission($commission_id) {
+        global $wpdb;
+        
+        // Get commission details
+        $commission = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}aas_commissions WHERE id = %d",
+            $commission_id
+        ));
+        
+        if (!$commission) {
+            return false;
+        }
+        
+        // Can't refund already refunded commissions
+        if (in_array($commission->status, array('refunded', 'refunded_paid'))) {
+            return false;
+        }
+        
+        // If approved, deduct from balance
+        if ($commission->status === 'approved') {
+            $wpdb->query($wpdb->prepare(
+                "UPDATE {$wpdb->prefix}aas_affiliates 
+                SET total_earnings = total_earnings - %f 
+                WHERE id = %d",
+                $commission->amount,
+                $commission->affiliate_id
+            ));
+            
+            error_log('AAS Manual Refund: Deducted ' . $commission->amount . ' from affiliate #' . $commission->affiliate_id);
+        }
+        
+        // Mark as refunded
+        $result = $wpdb->update(
+            $wpdb->prefix . 'aas_commissions',
+            array(
+                'status' => 'refunded',
+                'description' => $commission->description . ' [MANUALLY REFUNDED]'
+            ),
+            array('id' => $commission_id),
+            array('%s', '%s'),
+            array('%d')
+        );
+        
+        do_action('aas_commission_refunded', $commission_id, $commission->affiliate_id);
+        
+        return $result;
+    }
+
 }

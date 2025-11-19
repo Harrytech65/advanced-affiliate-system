@@ -18,6 +18,8 @@ class AAS_Admin {
         add_action('wp_ajax_aas_mark_paid_commission', array($this, 'mark_paid_commission'));
         add_action('wp_ajax_aas_get_commission_details', array($this, 'get_commission_details'));
         add_action('wp_ajax_aas_process_payout', array($this, 'process_payout_ajax'));
+        add_action('wp_ajax_aas_get_payout_details', array($this, 'get_payout_details'));
+        add_action('wp_ajax_aas_refund_commission', array($this, 'refund_commission'));
     }
     
     public function add_menu_pages() {
@@ -369,6 +371,160 @@ class AAS_Admin {
             wp_send_json_success('Payout processed successfully');
         } else {
             wp_send_json_error('Failed to process payout');
+        }
+    }
+    public function get_payout_details() {
+        check_ajax_referer('aas_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        $payout_id = intval($_POST['payout_id']);
+        
+        global $wpdb;
+        $payout = $wpdb->get_row($wpdb->prepare(
+            "SELECT p.*, a.*, u.display_name, u.user_email
+            FROM {$wpdb->prefix}aas_payouts p
+            LEFT JOIN {$wpdb->prefix}aas_affiliates a ON p.affiliate_id = a.id
+            LEFT JOIN {$wpdb->users} u ON a.user_id = u.ID
+            WHERE p.id = %d",
+            $payout_id
+        ));
+        
+        if (!$payout) {
+            wp_send_json_error('Payout not found');
+        }
+        
+        $currency = get_option('aas_currency', 'USD');
+        
+        ob_start();
+        ?>
+        <div class="aas-amount-highlight">
+            <div style="font-size: 18px; opacity: 0.9;">Amount to Pay</div>
+            <div class="amount"><?php echo $currency; ?> <?php echo number_format($payout->amount, 2); ?></div>
+            <div style="opacity: 0.9;">to <?php echo esc_html($payout->display_name); ?></div>
+        </div>
+
+        <div class="aas-payment-info">
+            <h3>💳 Payment Information</h3>
+            
+            <?php if ($payout->method === 'bank'): ?>
+                <div class="aas-payment-row">
+                    <div class="aas-payment-label">🌍 Country:</div>
+                    <div class="aas-payment-value"><strong><?php echo esc_html($payout->country); ?></strong></div>
+                </div>
+                <div class="aas-payment-row">
+                    <div class="aas-payment-label">🏦 Bank Name:</div>
+                    <div class="aas-payment-value"><strong><?php echo esc_html($payout->bank_name); ?></strong></div>
+                </div>
+                <div class="aas-payment-row" style="background: #fffbcc;">
+                    <div class="aas-payment-label">👤 Account Holder:</div>
+                    <div class="aas-payment-value">
+                        <strong style="font-size: 16px; color: #d63638;">
+                            <?php echo esc_html($payout->account_holder_name); ?>
+                        </strong>
+                    </div>
+                </div>
+                <div class="aas-payment-row" style="background: #fffbcc;">
+                    <div class="aas-payment-label">💳 Account Number:</div>
+                    <div class="aas-payment-value">
+                        <code><?php echo esc_html($payout->account_number); ?></code>
+                        <button class="button aas-copy-btn" data-copy="<?php echo esc_attr($payout->account_number); ?>">
+                            📋 Copy
+                        </button>
+                    </div>
+                </div>
+                <?php if (!empty($payout->routing_code)): ?>
+                <div class="aas-payment-row" style="background: #e7f3ff;">
+                    <div class="aas-payment-label">🔢 IFSC/SWIFT Code:</div>
+                    <div class="aas-payment-value">
+                        <code><?php echo esc_html($payout->routing_code); ?></code>
+                        <button class="button aas-copy-btn" data-copy="<?php echo esc_attr($payout->routing_code); ?>">
+                            📋 Copy
+                        </button>
+                    </div>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($payout->bank_address)): ?>
+                <div class="aas-payment-row">
+                    <div class="aas-payment-label">📍 Bank Address:</div>
+                    <div class="aas-payment-value"><?php echo nl2br(esc_html($payout->bank_address)); ?></div>
+                </div>
+                <?php endif; ?>
+
+            <?php elseif ($payout->method === 'paypal'): ?>
+                <div class="aas-payment-row">
+                    <div class="aas-payment-label">💳 PayPal Email:</div>
+                    <div class="aas-payment-value">
+                        <code><?php echo esc_html($payout->payment_email); ?></code>
+                        <button class="button aas-copy-btn" data-copy="<?php echo esc_attr($payout->payment_email); ?>">
+                            📋 Copy
+                        </button>
+                        <a href="mailto:<?php echo esc_attr($payout->payment_email); ?>" class="button" style="margin-left: 5px;">
+                            ✉️ Send Email
+                        </a>
+                    </div>
+                </div>
+
+            <?php elseif ($payout->method === 'upi'): ?>
+                <div class="aas-payment-row" style="background: #d4edda;">
+                    <div class="aas-payment-label">📱 UPI ID:</div>
+                    <div class="aas-payment-value">
+                        <code style="font-size: 16px; background: white; padding: 10px 15px;">
+                            <?php echo esc_html($payout->upi_id); ?>
+                        </code>
+                        <button class="button aas-copy-btn" data-copy="<?php echo esc_attr($payout->upi_id); ?>">
+                            📋 Copy UPI ID
+                        </button>
+                    </div>
+                </div>
+
+            <?php elseif ($payout->method === 'other'): ?>
+                <div class="aas-payment-row">
+                    <div class="aas-payment-label">💰 Payment Details:</div>
+                    <div class="aas-payment-value">
+                        <div style="background: #f0f0f0; padding: 15px; border-radius: 4px;">
+                            <?php echo nl2br(esc_html($payout->other_payment_details)); ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <div class="aas-payment-row">
+                <div class="aas-payment-label">📧 Contact Email:</div>
+                <div class="aas-payment-value">
+                    <a href="mailto:<?php echo esc_attr($payout->user_email); ?>">
+                        <?php echo esc_html($payout->user_email); ?>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div style="background: #e7f3ff; padding: 15px; border-radius: 6px; border-left: 4px solid #2196f3;">
+            <strong>💡 Note:</strong> After transferring the payment, click "Mark as Paid" and enter the transaction reference number.
+        </div>
+        <?php
+        $html = ob_get_clean();
+        
+        wp_send_json_success(array('html' => $html));
+    }
+    public function refund_commission() {
+        check_ajax_referer('aas_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+        
+        $commission_id = intval($_POST['commission_id']);
+        
+        $commission_handler = new AAS_Commission();
+        $result = $commission_handler->refund_commission($commission_id);
+        
+        if ($result) {
+            wp_send_json_success('Commission refunded successfully');
+        } else {
+            wp_send_json_error('Failed to refund commission');
         }
     }
 }

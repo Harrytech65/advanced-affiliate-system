@@ -96,8 +96,16 @@ class AAS_Dashboard {
         
         $affiliate_id = AAS_Database::create_affiliate(array(
             'user_id' => $user_id,
-            'payment_email' => $payment_email,
-            'payment_method' => $payment_method,
+            'payment_email' => sanitize_email($_POST['payment_email']),
+            'payment_method' => sanitize_text_field($_POST['payment_method']),
+            'country' => sanitize_text_field($_POST['country']),
+            'bank_name' => sanitize_text_field($_POST['bank_name']),
+            'account_holder_name' => sanitize_text_field($_POST['account_holder_name']),
+            'account_number' => sanitize_text_field($_POST['account_number']),
+            'routing_code' => sanitize_text_field($_POST['routing_code']),
+            'bank_address' => sanitize_textarea_field($_POST['bank_address']),
+            'upi_id' => sanitize_text_field($_POST['upi_id']),
+            'other_payment_details' => sanitize_textarea_field($_POST['other_payment_details']),
             'status' => $status
         ));
         

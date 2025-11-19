@@ -26,6 +26,7 @@ if (!defined('ABSPATH')) exit;
                 <th><?php _e('Total Earnings', 'advanced-affiliate'); ?></th>
                 <th><?php _e('Status', 'advanced-affiliate'); ?></th>
                 <th><?php _e('Actions', 'advanced-affiliate'); ?></th>
+                <th><?php _e('Payment Method', 'advanced-affiliate'); ?></th>
             </tr>
         </thead>
         <tbody>
@@ -69,6 +70,24 @@ if (!defined('ABSPATH')) exit;
                             <?php _e('Delete', 'advanced-affiliate'); ?>
                         </button>
                     </td>
+                    <td>
+                        <?php if ($affiliate->payment_method === 'bank'): ?>
+                            <span title="<?php echo esc_attr($affiliate->bank_name); ?>">🏦 Bank Transfer</span>
+                        <?php elseif ($affiliate->payment_method === 'paypal'): ?>
+                            💳 PayPal
+                        <?php elseif ($affiliate->payment_method === 'upi'): ?>
+                            📱 UPI
+                        <?php else: ?>
+                            <?php echo ucfirst($affiliate->payment_method); ?>
+                        <?php endif; ?>
+                        
+                        <a href="?page=aas-affiliates&action=view_payment&id=<?php echo $affiliate->id; ?>" 
+                        class="button button-small" 
+                        style="margin-left: 10px;">
+                            View Details
+                        </a>
+                    </td>
+
                 </tr>
                 <?php endforeach; ?>
             <?php else: ?>

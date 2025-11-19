@@ -151,6 +151,143 @@ $stats = AAS_Database::get_affiliate_stats($affiliate_id);
                 <?php submit_button(__('Update Affiliate', 'advanced-affiliate'), 'primary', 'aas_update_affiliate'); ?>
             </form>
         </div>
+        <div class="aas-admin-section" style="margin-top: 30px;">
+            <h2><?php _e('Payment Information', 'advanced-affiliate'); ?></h2>
+            
+            <table class="form-table">
+                <tr>
+                    <th scope="row"><?php _e('Payment Method', 'advanced-affiliate'); ?></th>
+                    <td>
+                        <strong style="font-size: 16px;">
+                            <?php 
+                            if ($affiliate->payment_method === 'bank') {
+                                echo '🏦 Bank Transfer';
+                            } elseif ($affiliate->payment_method === 'paypal') {
+                                echo '💳 PayPal';
+                            } elseif ($affiliate->payment_method === 'upi') {
+                                echo '📱 UPI (India)';
+                            } else {
+                                echo ucfirst($affiliate->payment_method);
+                            }
+                            ?>
+                        </strong>
+                    </td>
+                </tr>
+
+                <?php if ($affiliate->payment_method === 'paypal'): ?>
+                <tr>
+                    <th scope="row"><?php _e('PayPal Email', 'advanced-affiliate'); ?></th>
+                    <td>
+                        <code style="font-size: 14px; background: #f0f0f0; padding: 5px 10px; border-radius: 4px;">
+                            <?php echo esc_html($affiliate->payment_email); ?>
+                        </code>
+                        <a href="mailto:<?php echo esc_attr($affiliate->payment_email); ?>" class="button button-small" style="margin-left: 10px;">
+                            Send Email
+                        </a>
+                    </td>
+                </tr>
+
+                <?php elseif ($affiliate->payment_method === 'bank'): ?>
+                <tr>
+                    <th scope="row"><?php _e('Country', 'advanced-affiliate'); ?></th>
+                    <td><strong><?php echo esc_html($affiliate->country); ?></strong></td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php _e('Bank Name', 'advanced-affiliate'); ?></th>
+                    <td><strong><?php echo esc_html($affiliate->bank_name); ?></strong></td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php _e('Account Holder Name', 'advanced-affiliate'); ?></th>
+                    <td>
+                        <strong style="color: #d63638; font-size: 15px;">
+                            <?php echo esc_html($affiliate->account_holder_name); ?>
+                        </strong>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php _e('Account Number / IBAN', 'advanced-affiliate'); ?></th>
+                    <td>
+                        <code style="font-size: 14px; background: #fff3cd; padding: 8px 12px; border-radius: 4px; display: inline-block;">
+                            <?php echo esc_html($affiliate->account_number); ?>
+                        </code>
+                        <button onclick="navigator.clipboard.writeText('<?php echo esc_js($affiliate->account_number); ?>'); this.textContent='✓ Copied';" 
+                                class="button button-small" style="margin-left: 10px;">
+                            📋 Copy
+                        </button>
+                    </td>
+                </tr>
+                <?php if (!empty($affiliate->routing_code)): ?>
+                <tr>
+                    <th scope="row"><?php _e('Routing Code (IFSC/SWIFT/BIC)', 'advanced-affiliate'); ?></th>
+                    <td>
+                        <code style="font-size: 14px; background: #d1ecf1; padding: 8px 12px; border-radius: 4px; display: inline-block;">
+                            <?php echo esc_html($affiliate->routing_code); ?>
+                        </code>
+                        <button onclick="navigator.clipboard.writeText('<?php echo esc_js($affiliate->routing_code); ?>'); this.textContent='✓ Copied';" 
+                                class="button button-small" style="margin-left: 10px;">
+                            📋 Copy
+                        </button>
+                    </td>
+                </tr>
+                <?php endif; ?>
+                <?php if (!empty($affiliate->bank_address)): ?>
+                <tr>
+                    <th scope="row"><?php _e('Bank Branch Address', 'advanced-affiliate'); ?></th>
+                    <td><?php echo nl2br(esc_html($affiliate->bank_address)); ?></td>
+                </tr>
+                <?php endif; ?>
+
+                <?php elseif ($affiliate->payment_method === 'upi'): ?>
+                <tr>
+                    <th scope="row"><?php _e('UPI ID', 'advanced-affiliate'); ?></th>
+                    <td>
+                        <code style="font-size: 15px; background: #d4edda; padding: 8px 15px; border-radius: 4px; display: inline-block;">
+                            <?php echo esc_html($affiliate->upi_id); ?>
+                        </code>
+                        <button onclick="navigator.clipboard.writeText('<?php echo esc_js($affiliate->upi_id); ?>'); this.textContent='✓ Copied';" 
+                                class="button button-small" style="margin-left: 10px;">
+                            📋 Copy
+                        </button>
+                    </td>
+                </tr>
+
+                <?php elseif ($affiliate->payment_method === 'other'): ?>
+                <tr>
+                    <th scope="row"><?php _e('Payment Details', 'advanced-affiliate'); ?></th>
+                    <td>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 4px; border-left: 4px solid #667eea;">
+                            <?php echo nl2br(esc_html($affiliate->other_payment_details)); ?>
+                        </div>
+                    </td>
+                </tr>
+                <?php endif; ?>
+            </table>
+
+            <!-- Quick Payment Info Card -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; margin-top: 20px;">
+                <h3 style="margin-top: 0; color: white;">💰 Payment Summary</h3>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                    <div>
+                        <div style="font-size: 24px; font-weight: bold;">
+                            <?php echo get_option('aas_currency', 'USD'); ?> <?php echo number_format($affiliate->total_earnings, 2); ?>
+                        </div>
+                        <div style="opacity: 0.9;">Total Earnings</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: bold;">
+                            <?php echo get_option('aas_currency', 'USD'); ?> <?php echo number_format($affiliate->total_paid, 2); ?>
+                        </div>
+                        <div style="opacity: 0.9;">Total Paid</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: bold;">
+                            <?php echo get_option('aas_currency', 'USD'); ?> <?php echo number_format($affiliate->total_earnings - $affiliate->total_paid, 2); ?>
+                        </div>
+                        <div style="opacity: 0.9;">Available Balance</div>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <!-- Stats Sidebar -->
         <div>
