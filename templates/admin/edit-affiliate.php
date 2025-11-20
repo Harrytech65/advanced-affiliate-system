@@ -137,7 +137,29 @@ $stats = AAS_Database::get_affiliate_stats($affiliate_id);
                             </select>
                         </td>
                     </tr>
-                    
+                    <tr>
+                        <th scope="row">
+                            <label><?php _e('Website URL', 'advanced-affiliate'); ?></label>
+                        </th>
+                        <td>
+                            <?php if ($affiliate->website_url): ?>
+                                <a href="<?php echo esc_url($affiliate->website_url); ?>" target="_blank">
+                                    <?php echo esc_html($affiliate->website_url); ?>
+                                </a>
+                            <?php else: ?>
+                                <?php _e('Not provided', 'advanced-affiliate'); ?>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label><?php _e('Promotion Method', 'advanced-affiliate'); ?></label>
+                        </th>
+                        <td>
+                            <p><?php echo esc_html($affiliate->promotion_method); ?></p>
+                        </td>
+                    </tr>
                     <tr>
                         <th scope="row">
                             <label><?php _e('Registration Date', 'advanced-affiliate'); ?></label>

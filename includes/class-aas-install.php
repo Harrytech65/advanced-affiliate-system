@@ -27,8 +27,27 @@ class AAS_Install {
             affiliate_code varchar(50) NOT NULL,
             status varchar(20) DEFAULT 'pending',
             commission_rate decimal(10,2) DEFAULT 0,
+            
+            -- Personal Info
+            website_url varchar(255),
+            promotion_method text,
+            
+            -- Payment Info
             payment_email varchar(100),
             payment_method varchar(50),
+            country varchar(10),
+            
+            -- Bank Details
+            bank_name varchar(200),
+            account_holder_name varchar(200),
+            account_number varchar(100),
+            routing_code varchar(50),
+            bank_address text,
+            
+            -- UPI/Other
+            upi_id varchar(100),
+            other_payment_details text,
+            
             total_earnings decimal(10,2) DEFAULT 0,
             total_paid decimal(10,2) DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,

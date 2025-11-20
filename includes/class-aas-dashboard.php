@@ -71,53 +71,79 @@ class AAS_Dashboard {
     
     public function register_affiliate() {
         check_ajax_referer('aas_frontend_nonce', 'nonce');
-        
+
         if (!is_user_logged_in()) {
             wp_send_json_error('You must be logged in');
         }
-        
+
         $user_id = get_current_user_id();
-        
-        // Check if already registered
-        $existing = AAS_Database::get_affiliate_by_user($user_id);
-        if ($existing) {
+
+        // Already registered?
+        if (AAS_Database::get_affiliate_by_user($user_id)) {
             wp_send_json_error('You are already registered');
         }
-        
-        $payment_email = sanitize_email($_POST['payment_email']);
-        $payment_method = sanitize_text_field($_POST['payment_method']);
-        
-        if (!is_email($payment_email)) {
-            wp_send_json_error('Invalid email address');
+
+        // Payment method
+        $payment_method = sanitize_text_field($_POST['payment_method'] ?? '');
+        if (empty($payment_method)) {
+            wp_send_json_error('Please select a payment method');
         }
-        
-        $auto_approve = get_option('aas_auto_approve', 'no');
-        $status = $auto_approve === 'yes' ? 'active' : 'pending';
-        
-        $affiliate_id = AAS_Database::create_affiliate(array(
-            'user_id' => $user_id,
-            'payment_email' => sanitize_email($_POST['payment_email']),
-            'payment_method' => sanitize_text_field($_POST['payment_method']),
-            'country' => sanitize_text_field($_POST['country']),
-            'bank_name' => sanitize_text_field($_POST['bank_name']),
-            'account_holder_name' => sanitize_text_field($_POST['account_holder_name']),
-            'account_number' => sanitize_text_field($_POST['account_number']),
-            'routing_code' => sanitize_text_field($_POST['routing_code']),
-            'bank_address' => sanitize_textarea_field($_POST['bank_address']),
-            'upi_id' => sanitize_text_field($_POST['upi_id']),
-            'other_payment_details' => sanitize_textarea_field($_POST['other_payment_details']),
-            'status' => $status
-        ));
-        
+
+        // Auto-approve or pending
+        $status = get_option('aas_auto_approve', 'no') === 'yes' ? 'active' : 'pending';
+
+        // Base data
+        $affiliate_data = array(
+            'user_id'           => $user_id,
+            'status'            => $status,
+            'website_url'       => sanitize_text_field($_POST['website_url'] ?? ''),
+            'promotion_method'  => sanitize_textarea_field($_POST['promotion_method'] ?? ''),
+            'payment_method'    => $payment_method,
+        );
+
+        // Payment-specific fields
+        switch ($payment_method) {
+
+            case 'paypal':
+                $email = sanitize_email($_POST['payment_email'] ?? '');
+                if (!is_email($email)) {
+                    wp_send_json_error('Invalid PayPal email address');
+                }
+                $affiliate_data['payment_email'] = $email;
+                break;
+
+            case 'bank':
+                $affiliate_data['country']              = sanitize_text_field($_POST['country'] ?? '');
+                $affiliate_data['bank_name']            = sanitize_text_field($_POST['bank_name'] ?? '');
+                $affiliate_data['account_holder_name']  = sanitize_text_field($_POST['account_holder_name'] ?? '');
+                $affiliate_data['account_number']       = sanitize_text_field($_POST['account_number'] ?? '');
+                $affiliate_data['routing_code']         = sanitize_text_field($_POST['routing_code'] ?? '');
+                $affiliate_data['bank_address']         = sanitize_textarea_field($_POST['bank_address'] ?? '');
+                break;
+
+            case 'upi':
+                $affiliate_data['upi_id'] = sanitize_text_field($_POST['upi_id'] ?? '');
+                break;
+
+            case 'other':
+                $affiliate_data['other_payment_details'] =
+                    sanitize_textarea_field($_POST['other_payment_details'] ?? '');
+                break;
+        }
+
+        // Create affiliate
+        $affiliate_id = AAS_Database::create_affiliate($affiliate_data);
+
         if ($affiliate_id) {
             do_action('aas_affiliate_registered', $affiliate_id, $user_id);
+
             wp_send_json_success(array(
-                'message' => $status === 'active' ? 'Registration approved!' : 'Application submitted!',
-                'redirect' => get_permalink(get_option('aas_affiliate_dashboard_page_id'))
+                'message'  => $status === 'active' ? 'Registration approved!' : 'Application submitted for review!',
+                'redirect' => get_permalink(get_option('aas_affiliate_dashboard_page_id')),
             ));
-        } else {
-            wp_send_json_error('Registration failed');
         }
+
+        wp_send_json_error('Registration failed. Please try again.');
     }
 
     public function handle_payout_request() {

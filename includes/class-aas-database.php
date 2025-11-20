@@ -26,22 +26,31 @@ class AAS_Database {
     // Create affiliate
     public static function create_affiliate($data) {
         global $wpdb;
-        
+
         $defaults = array(
-            'user_id' => 0,
-            'affiliate_code' => self::generate_affiliate_code(),
-            'status' => 'pending',
-            'commission_rate' => get_option('aas_commission_rate', 10)
+            'user_id'         => 0,
+            'affiliate_code'  => self::generate_affiliate_code(),
+            'status'          => 'pending',
+            'commission_rate' => get_option('aas_commission_rate', 10),
+            'created_at'      => current_time('mysql'),
         );
-        
+
         $data = wp_parse_args($data, $defaults);
-        
-        $wpdb->insert(
-            $wpdb->prefix . 'aas_affiliates',
-            $data,
-            array('%d', '%s', '%s', '%f')
-        );
-        
+
+        // Auto-generate %s / %d / %f formats based on type
+        $formats = array();
+        foreach ($data as $value) {
+            if (is_int($value)) {
+                $formats[] = '%d';
+            } elseif (is_float($value) || is_numeric($value)) {
+                $formats[] = '%f';
+            } else {
+                $formats[] = '%s';
+            }
+        }
+
+        $wpdb->insert($wpdb->prefix . 'aas_affiliates', $data, $formats);
+
         return $wpdb->insert_id;
     }
     

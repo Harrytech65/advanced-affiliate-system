@@ -20,8 +20,45 @@ if (!defined('ABSPATH')) exit;
     </div>
 
     <form id="aas-registration-form" class="aas-form">
-        
-        <h3 class="aas-section-title"><?php _e('Payment Information', 'advanced-affiliate'); ?></h3>
+    
+    <h3 class="aas-section-title"><?php _e('Personal Information', 'advanced-affiliate'); ?></h3>
+    
+    <div class="aas-form-group">
+        <label for="full_name"><?php _e('Full Name', 'advanced-affiliate'); ?> *</label>
+        <input type="text" id="full_name" name="full_name" required 
+               value="<?php echo esc_attr(wp_get_current_user()->display_name); ?>" readonly>
+        <small><?php _e('Your name from WordPress profile', 'advanced-affiliate'); ?></small>
+    </div>
+
+    <div class="aas-form-group">
+        <label for="username"><?php _e('Username', 'advanced-affiliate'); ?> *</label>
+        <input type="text" id="username" name="username" required 
+               value="<?php echo esc_attr(wp_get_current_user()->user_login); ?>" readonly>
+        <small><?php _e('Your WordPress username', 'advanced-affiliate'); ?></small>
+    </div>
+
+    <div class="aas-form-group">
+        <label for="email"><?php _e('Account Email', 'advanced-affiliate'); ?> *</label>
+        <input type="email" id="email" name="email" required 
+               value="<?php echo esc_attr(wp_get_current_user()->user_email); ?>" readonly>
+        <small><?php _e('Your WordPress account email', 'advanced-affiliate'); ?></small>
+    </div>
+
+    <div class="aas-form-group">
+        <label for="website_url"><?php _e('Website URL', 'advanced-affiliate'); ?></label>
+        <input type="url" id="website_url" name="website_url" 
+               placeholder="https://yourwebsite.com">
+        <small><?php _e('Where will you promote our products? (Optional)', 'advanced-affiliate'); ?></small>
+    </div>
+
+    <div class="aas-form-group">
+        <label for="promotion_method"><?php _e('How will you promote us?', 'advanced-affiliate'); ?> *</label>
+        <textarea id="promotion_method" name="promotion_method" rows="4" required 
+                  maxlength="200" placeholder="<?php _e('Describe your marketing strategy...', 'advanced-affiliate'); ?>"></textarea>
+        <small><span id="char-count">0</span> / 200 <?php _e('characters', 'advanced-affiliate'); ?></small>
+    </div>
+
+    <h3 class="aas-section-title"><?php _e('Payment Information', 'advanced-affiliate'); ?></h3>
         
         <div class="aas-form-group">
             <label for="payment_method"><?php _e('Preferred Payment Method', 'advanced-affiliate'); ?> *</label>
